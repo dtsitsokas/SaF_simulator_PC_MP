@@ -1,5 +1,6 @@
-# SaF-LUTS
-Simulator based on Store-and-Forward model with enhanced features, including possibility for Perimeter Control (with static and dynamic boundaries) and Max Pressure control modes. The code is written in MATLAB. It is used in the following paper. Please site this paper in case you are using the model for yor research in prospective publication. 
+# Store-and-Forward urban traffic simulator with enhanced capabilities and modules for multi-region perimeter control and decentralized Max Pressure control 
+
+Simulator based on Store-and-Forward model with enhanced features, including possibility for Perimeter Control (with static boundaries) and local Max Pressure control. The code is written in MATLAB. It is used in our paper that is cited below. In case you find the code useful for yor research, please cite the following article in your prospective publication: 
 
 Tsitsokas, D., Kouvelas, A., & Geroliminis, N. (2023). Two-layer adaptive signal control framework for large-scale dynamically-congested networks: Combining efficient Max Pressure with Perimeter Control. Transportation Research Part C: Emerging Technologies, 152, 104128. Full article [here](https://www.sciencedirect.com/science/article/pii/S0968090X23001171). 
 
@@ -13,7 +14,7 @@ Tsitsokas, D., Kouvelas, A., & Geroliminis, N. (2023). Two-layer adaptive signal
   publisher={Elsevier}
 }
 
-The above work and the development of this code is partially funded by [Dit4Tram](https://dit4tram.eu/) “Distributed Intelligence & Technology for Traffic & Mobility Management” project from the European Union’s Horizon 2020 research and innovation program under Grant Agreement 953783.
+The code related to this work is partially funded by [Dit4Tram](https://dit4tram.eu/) “Distributed Intelligence & Technology for Traffic & Mobility Management” project from the European Union’s Horizon 2020 research and innovation program under Grant Agreement 953783.
 
 Some brief instructions for using enhanced Store-and-Forward simulator 
 ----------------------------------------------------------------------
