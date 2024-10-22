@@ -64,17 +64,6 @@ D] Basic simulation results
 	* Results are all gathered in struct "outdata", which is saved in the results file 
 	* Run "ResultAnalysis" to obtain some standard figures describing the run: 
 
-E] To update the perimeter control part (replace PI controller) 
-
-	* Replace/Edit lines 485-487 of SaF (PI) or add a function for PC there 
-		- k_c: index of the completed control cycle 
-		- agg_u: vector of control variables (4 interregional green times, 3 external perimeter allowed rates) 
-		- applied_u: the actually applied average green times of the previous cycle per approach (dimensions same as agg_u) 
-		- agg_n: vector of aggregated regional accumulations (3 regions) 
-		- indata.max_n: vector of maximum regional accumulations (3 regions) - for normalization of accumulation (if necessary) 
-	* Need to produce the aggregated green time between regions + external gating (external can be omitted if you dont need it) 
-	* The final calculation of signals of the controlled nodes can remain unchanged (based on agg_n, traffic signals are accordingly updated) 
-
 -----------------------------------------------------------------------------
 
 Results file content: 
