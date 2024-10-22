@@ -4,6 +4,7 @@ Simulator based on Store-and-Forward model with enhanced features, including pos
 
 Tsitsokas, D., Kouvelas, A., & Geroliminis, N. (2023). Two-layer adaptive signal control framework for large-scale dynamically-congested networks: Combining efficient Max Pressure with Perimeter Control. Transportation Research Part C: Emerging Technologies, 152, 104128. Full article [here](https://www.sciencedirect.com/science/article/pii/S0968090X23001171). 
 
+```
 @article{tsitsokas2023two,
   title={Two-layer adaptive signal control framework for large-scale dynamically-congested networks: Combining efficient Max Pressure with Perimeter Control},
   author={Tsitsokas, Dimitrios and Kouvelas, Anastasios and Geroliminis, Nikolas},
@@ -13,6 +14,7 @@ Tsitsokas, D., Kouvelas, A., & Geroliminis, N. (2023). Two-layer adaptive signal
   year={2023},
   publisher={Elsevier}
 }
+```
 
 The code related to this work is partially funded by [Dit4Tram](https://dit4tram.eu/) “Distributed Intelligence & Technology for Traffic & Mobility Management” project from the European Union’s Horizon 2020 research and innovation program under Grant Agreement 953783.
 
