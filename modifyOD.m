@@ -1,6 +1,10 @@
 function [OD] = modifyOD(OD)
 %Modify OD matrix to redistribute demand from certain centroids to
-%neighboring centroids 
+%neighboting centroids 
+
+%read initial OD matrix 
+%OD = dlmread('OD.txt');
+% init_sum = sum(sum(OD(2:end,2:end)))
 
 %Centroid 69087 (south-east) - long delays and high average
 %density/spillbacks 

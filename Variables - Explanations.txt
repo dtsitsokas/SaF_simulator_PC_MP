@@ -1,0 +1,139 @@
+EXPLAINING - DESCRIBING names of variables, notation, txt files format etc.  
+
+*LinkID: IDs of links as they appear in Aimsun 
+Files read from txt - Input daata 
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+buses.txt: BusLineID Number_of_Stops Number_of_Links IDs_of_Links 
+
+centroids.txt: CentroidID LinkIDs_Connected 
+
+downstr.txt: LinkID Number_of_Downstream_Links IDs_of_Downstream_Links
+
+greens.txt: For every junction (like in nodes.txt) g/c (-1 if no signal) 
+
+nodes.txt: 3 rows : 1) NodeID	Signal_Plan	Number_of_turnings 
+				    2) Origin_Link Origin_Link ...
+				    3) Destin_Link	Destin_Link
+
+OD_SF : OD Matrix [CentroidID to CentroidID] - (veh/h)
+
+connectivity.txt : 3 rows : 1) NodeID	Signal_Plan	Number_of_turnings 
+				           2) Origin_NoOfLanes  Origin_NoOfLanes ...
+				           3) Destin_NoOfLanes	Destin_NoOfLanes
+
+rightLn.txt : 3 rows 1) NodeID	Signal_Plan	Number_of_turnings 
+				     2) Binary_Upstream  ((1 if right lane is included in the movement / 0 otehrwise) 					 
+				     3) Binary_Downstream 							   
+						   						   
+turningSignals: NodeID -1(= no traffic light) or (in Barcelona, NodeID is not printed for no controlled)  
+				NodeID  NoOfPhases  Offset 
+				DurationOfPhase#1 DurationOfPhase#2  ...
+				UpstreamLinkWithROWinPhase#1_1   	UpstreamLinkWithROWinPhase#1_2 
+				DownstreamLinkWithROWinPhase#1_1  DownstreamLinkWithROWinPhase#1_2
+				UpstreamLinkWithROWinPhase#2_1   	UpstreamLinkWithROWinPhase#2_2 
+				DownstreamLinkWithROWinPhase#2_1  DownstreamLinkWithROWinPhase#2_2
+				...
+
+pythonNodes: NodeID X-coordinate Y-coordinate
+
+pythonLinks: LinkID Number_of_Lanes Length Starting_Node Ending_Node (-1 if centroid) 
+
+turnings : f1 f2 f3 ... (for each of every node) for 15 mins (0 - 900 sec) 
+		   f1 f2 f3 ... (for each of every node) for 15 mins (900 - 1800 sec) 
+		   ...
+		   
+turningsPics.txt : Each row refers to each link as they appear in the "downstr.txt" table 
+				   % of turns (turn rate) to each of the downstream links following the sequence they appear in downstr.txt 
+				   turn_rate_to_first_downstream_link  turn_rate_to_second_downstream_link ... (they row sums to 1, if only one element = 1 : the link doesn't have downstream links) 
+				   426 rows (links) for first 15 mins (0-15 mins) (1)
+				   426 rows (links) for next 15 mins (16-30 mins) (2)
+				   ...
+				   426 rows (links) last 15 mins (6h 45 mins - 7 hours) (28) - in total 11928 = 426 x 28 rows 
+				   We have turn rates for 7 hours in intervals of 15 mins 
+
+connectivity.txt :  1) NodeID	Signal_Plan	Number_of_approaches(turnings)  
+				    2) #oflanes_upstream_approach1 #oflanes_upstream_approach2 #oflanes_upstream_approach3 ...
+				    3) #oflanes_downstream_approach1 #oflanes_downstream_approach2 #oflanes_downstream_approach3 ... 
+
+		
+
+ALL READ FILES SAVED AS FirstInput.mat - Created and Loaded by the function initialization 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Files Created based on the input files to help in the coding 
+------------------------------------------------------------------------------------------------
+Links :  LinkID	Number_of_Lanes	Length Starting_Node Ending_Node
+
+upstr : LinkID Number_of_Upstream_Links IDs_of_Upstream_Links 
+
+
+junct (struct) - ALL data for every approach upstream-downstream 
+junct.origin       : Origin Links (LinkID)
+junct.destination  : Destination Links (LinkID)
+junct.splan        : Signal plan code (0: no plan, 1 or 2: plan) for approach origin-destination
+junct.goverc	   : g/c of the approach 
+junct.turn (1x22)  : Turning numbers (f) over time for this OD pair for every time segment of 15 mins e.g. junct.turn(k,1) = f for junct.origin(k) to junct.destination(k) at time interval 1 (first 15 mins)    
+junct.lanesu	   : Number of lanes in the upstream road with r.o.w. to the downstream link (allowed space usage) - no DBL scenario
+junct.lanesd       : Number of lanes in the downstream road to accept flow from upstream (usually NoOfLanes of downstream) - no DBL scenario
+junct.rightu	   : Binary to say if upstream link use most right lane	
+junct.rightd       : Binary to say if downstream link use most right lane 
+junct.offset	   : Offset of junction  
+junct.cycle 	   : Cycle duration of the junction 
+junct.or_index     : index of upstream link in links 
+junct.dest_index   : index of downstream link in links
+junct.or_lanes     : #oflanes_upstream after considering DBL plan 
+junct.dest_lanes   : #oflanes_downstream after considering DBL plan
+junct.all_or_lanes : Total number of lanes upstream (heading to all approaches) 
+junct.dest_capacity: Capacity of downstram link (vehs) 
+junct.sumDesTurn
+
+Nodes :  NodeID X-coordinate Y-coordinate
+
+busLinksLines:  LinkID  Number_of_Bus_Lines_per _link (for all links)   
+
+centroidDemand: CentroidID Sum_of_demand_for_all_destinations
+
+dec_var : LinkID (those who can take a bus lane: [81])  Binary variable(decision variables) 
+
+buslinkocc: [bus_line link_index] : passengers/h in link Links(link_index,1) for bus line l AFTER multipliying by 2 for central links (it is the final bus occ in pas/h) -PER hour (or per 6 vehicles) 
+
+bus_avg_occ: average no of passengers per vehicle(bus) - not in agreement with the buslinkocc (there we hve the x2 for the central links) - I dont remeber where we use this	
+
+busStopLinks: [BusLineID Number_of_Stops LinkIDs_with_stops] 	   
+-----------------------------------------------------------------------------------------		   
+
+Files produced during the execution of the SandFmain: 
+
+buslanes: LinkID (all links) DualVariable(0 no EBL, 1: one EBL) 
+
+
+x(link_index,time) = value of queue of link with index link_index at time t 
+
+
+f: indexes (in reference to Links(:,1)) of links that can take EBL // with at least 1 bus line and 3 or more lanes (to be agreed)// + extra links added 
+
+
+group1: indexes of links in Links(:,1) that belong to category 1 (not origin, not destination) 
+group2: indexes of links in Links(:,1) that belong to category 2 (origin centroids - not dest) 
+group3: indexes of links in Links(:,1) that belong to category 3 (destination centroids - not orig) 
+
+---------------------------------------------------------------------------------------------
+centrlinks: [1,161] LinkIDs of links in the central region: double bus passengers
+
+adjacency_matrix : square matrix of all nodes indicating nodes that are connected to each other / values are the distances [Row = from node / Colum = To node] 
+
+busFreq = vector, buses per hour for every bus line 
+
+---------------------------------------------------------------------------------------------
+Related to mode shifts 
+
+weights_buslinkocc - % of the double sum of the matrix 
+weights_centroidDemand - % of the sum of the column 
+cons_matrix_sum_bus_pas - double sum of matrix / Number of bus Pax  - We assume that these ratios remain constants / We use them to redistribute the demand in the buses and centroids when number of cars/bus pax change 
+cons_vector_centroidDemand - sum of column / Number of Cars 
+
+defac: demand scaling factor (trapezoidal) - one dimension array - gives the value for every time step [1 x kmax]
+
+The total sum of the buslinkocc is the total bus passener flow in the network / the sum of all flows at the same time. To find the number of the actual passengers, we have to 
+find the total PKT and then divide by the average bus trip length 
+
+---------------------------------------------------------------------------------------------

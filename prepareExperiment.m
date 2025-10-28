@@ -2,7 +2,7 @@
 
 function [] = prepareExperiment(scenario,PC_input_filename,PCmode,MPmode)
 load parameters.mat
-load FinalInput.mat 
+load FinalInput.mat
 
 %Set caseName for specific Max-Pressure Case (selection of nodes must be run first)
 caseName = scenario; 
@@ -14,14 +14,13 @@ cong_threshold = 0;
 
 %% Perimeter control settings 
 PC.mode = PCmode; %on/off for the specified intersections 
-if PC.mode >= 1 && init_clustering == 1 %ONLY used for static PC with initial clustering 
+if PC.mode == 1
     
     %Info of the controlled intersections for PC  
     %[PC] = PCcontrolledIntersectionsInfo(PC);
-    [PC] = PCcontrolledIntersectionsInfo_2(PC); %gating to all incoming inflow from VQs (external and internal)  
+    [PC] = PCcontrolledIntersectionsInfo_2(PC); %gating to all incoming inflow from VQs - equally(?) 
     
-    %Find node indices within MP - keep same structure (connect the 2
-    %structures) 
+    %Find node indices to MP - keep same structure 
     PC.nodes = PC.junctionsID; %initialize
     for i=1:size(PC.junctionsID,1)
         for j=1:size(PC.junctionsID,2)
@@ -43,6 +42,16 @@ if PC.mode >= 1 && init_clustering == 1 %ONLY used for static PC with initial cl
     
     % exclude PC intersections from MaxPressure set (add them to specialIntersections)
     specialIntersections = [specialIntersections unique(PC.junctionsID(PC.junctionsID>0))' unique(PC.junctionsIDco(PC.junctionsIDco>0))'];
+
+    
+   %% load the already set parameters of an existing PC scheme (input file)
+  
+    
+   load(PC_input_filename,'PC')
+   
+    %% ---
+   
+    load('FinalInput.mat','MP')
     
     %Copy info from the MP structure to create PC struct only for the controlled
     %intersections (all of them - main and co's)
@@ -79,7 +88,7 @@ if PC.mode >= 1 && init_clustering == 1 %ONLY used for static PC with initial cl
 
     %Add the twin nodes to PC struct (at the end) 
     for i=1:size(PC.nodesco,1)
-        for j=1:size(PC.nodesco,2) 
+        for j=1:size(PC.nodesco,2)
             if PC.nodesco(i,j)>0
                 k = k + 1; 
                 PC.indicesco(i,j) = k; 
@@ -100,40 +109,8 @@ if PC.mode >= 1 && init_clustering == 1 %ONLY used for static PC with initial cl
             end
         end
     end
-
-    %% PC PARAMETERS
-    % [EITHER] set PC parameters manyally 
-    %
-  %   PC.K_I = [15   -10     0;
-  %    0    -5    10;
-  %  -15    10     0;
-  %    0     5   -10;
-  %  -20     0     0;
-  %    0   -20     0;
-  %    0     0   -10];
-  % 
-  %   % 
-  %   % 
-  %    PC.K_P = [150  -100     0;
-  %    0   -50   100;
-  % -150   100     0;
-  %    0    50  -100;
-  % -200     0     0;
-  %    0  -200     0;
-  %    0     0  -100];
-  %   % 
-  %   PC.n_set = [8000 8000 8000]';
-  %   PC.actCrit = 0.0;
-  %   PC.deactCrit = 0.15;
-  %   PC.minRegAct = 1; 
-  %   PC.maxRegAct = 3; 
-
-    % [OR] load the already set parameters of an existing PC scheme (input file)
-    load(PC_input_filename,'PC')
-    PC.minRegAct = 2; 
-    PC.maxRegAct = 3; %deactivate when all regions fulfill the criterion
-    PC.mode = PCmode;
 end
+
 
 %% Max-Pressure settings - translate selected node IDs to MPnodes input
 
@@ -158,10 +135,12 @@ else
     error('wrong MPcode')
 end
 
+
+
 %% ""----Exclude non-eligible nodes and PC nodes --------""
-if ~isempty(MP_nodeIDs) && init_clustering > 0 
+if ~isempty(MP_nodeIDs)
     %exclude non-eligible nodes and PC intersections if PC is applied!
-    if PC.mode >= 1 
+    if PC.mode == 1
         check = intersect(intersect(MP_nodeIDs,specialIntersections), PC.nodeID); 
     else
         check = intersect(MP_nodeIDs,specialIntersections);
@@ -178,5 +157,5 @@ if ~isempty(MP_nodeIDs) && init_clustering > 0
 else
     MPnodes = [];
 end
-
+%save('MPnodesCase_MP_0','MPnodes','-mat')
 save(strcat('input_',scenario,'.mat'),'MPnodes','PC','p_1','lim_var','lim_occ','cong_threshold')

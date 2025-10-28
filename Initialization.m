@@ -1,4 +1,4 @@
-function []=Initialization()
+function []=Initialization(demandCode)
 %% Read all input files and create the FinalInput.mat to be used in a
 %simulation
 
@@ -20,18 +20,21 @@ connectivity = dlmread('conectivity.txt');
 rightLn = dlmread('rightLn.txt');
 
 %parametersetting() %has been executed already
-load('parameters.mat','minStageDur','vehlength','v_ff','init_clustering');
+load('parameters.mat','minStageDur','vehlength','v_ff');
 
 %% Exceptional adjustemnts for Barelona *****
 % remove centroid 57008 (column 26 of OD, line 25 of centroids)
 
 % Modify original OD to avoid certain local gridlocks 
-[OD] = modifyOD(OD);
+if demandCode == 1 
+    [OD] = modifyOD(OD);
 
-% ** To replace original OD matrix with new one (higher demand OD) uncomment: 
-% load('newOD_high.mat','OD_1');
-% OD = OD_1;
-% clear OD_1
+elseif demandCode == 2
+    %replace original OD matrix with new one (high demand OD)
+    load('newOD.mat','OD_1');
+    OD = OD_1;
+    clear OD_1
+end
 
 OD = [OD(:,1:25) OD(:,27:end)];
 ODWU = [ODWU(:,1:25) ODWU(:,27:end)];
@@ -48,14 +51,16 @@ nodes = nodes(nodes(:,1)~=57008,:);
 Links=pythonLinks;
 Nodes=pythonNodes;
 for i=1:length(centroids(:,1))
-    index=find(centroids(i,2)==Links(:,1)); 
-    Links(index, Links(index,:)==-1)=centroids(i,1);
+    index=find(centroids(i,2)==Links(:,1));
+    bindex=find(Links(index,:)==-1);
+    Links(index, bindex)=centroids(i,1);
     if ~isnan(centroids(i,3))
         index=find(centroids(i,3)==Links(:,1));
-        Links(index,Links(index,:)==-1)=centroids(i,1);
+        bindex=find(Links(index,:)==-1);
+        Links(index,bindex)=centroids(i,1);
     end
 end
-clear pythonLinks pythonNodes 
+clear pythonLinks pythonNodes bindex
 
 %% Plot the city (optional) ------------------------------------------------
 % NLinks = size(Links,1);
@@ -1236,9 +1241,9 @@ end
 % - # and duration of stages 
 % % - all approaches and  take green in every stage 
 MP.stageDur = {}; %initial (reference) stage duration 
-MP.stageVarDur = {}; %variable part 
-MP.stageBaseDur = {}; %constant part
-MP.stagesInvolved = {}; %eligible stages (all small stages ignored)
+MP.stageVarDur = {}; %
+MP.stageBaseDur = {}; 
+MP.stagesInvolved = {}; %eligible stages
 MP.approaches = {}; %all intersection approaches
 MP.stageApproaches = {};
 
@@ -1285,127 +1290,127 @@ end
 ind = junct2.cycle==0; 
 junct2.splan(ind)=0; 
 
-% Capacities of links
-capacity = Links2(:,2).*Links2(:,3)./vehlength;
 
 %% Clustering with regions only
+% MFDs - per region - clustering of ISTTT paper (Reza?)
+junctions3Is = dlmread('junctions_Is.txt');
+clusters3Is = dlmread('clusters4_Is.txt');
+no_reg = 3; %number of regions (1,2,3) 
+no_adjReg = 4; %number of adjacencies (1-2, 2-1, 2-3, 3-2) 
 
-% MFDs - per region - clustering of ISTTT paper (Reza?) 
-if init_clustering
-    junctions3Is = dlmread('junctions_Is.txt');
-    clusters3Is = dlmread('clusters4_Is.txt');
-    no_reg = length(unique(junctions3Is(:,2))); %number of regions (1,2,3)
-    % no_adjReg = 4; is currently set from parametersetting
-    region2 = cell(1,no_reg);
-    for i=1:no_reg
-        region2{i} = clusters3Is(clusters3Is(:,2)==i,1);
+region_1 = clusters3Is(clusters3Is(:,2)==1,1);
+region_2 = clusters3Is(clusters3Is(:,2)==2,1);
+region_3 = clusters3Is(clusters3Is(:,2)==3,1);
+region = zeros(max([length(region_1) length(region_2) length(region_3)]),3);
+region = region - 10;
+region(1:length(region_1),1)=region_1;
+region(1:length(region_2),2)=region_2;
+region(1:length(region_3),3)=region_3;
+Links2 = [Links2 zeros(size(Links2,1),1)];
+for i=1:length(group1)
+    ind = find(region==Links2(group1(i),1));
+    col = ceil(ind/size(region,1));
+    %         if sum(col==[1 2 3])<1
+    %             disp('error with regions')
+    %             col
+    %         end
+    Links2(i,6) = col;
+end
+reInd_1 = find(Links2(:,6)==1);
+reInd_2 = find(Links2(:,6)==2);
+reInd_3 = find(Links2(:,6)==3);
+
+nodereg_1 = junctions3Is(junctions3Is(:,2)==1,1);
+nodereg_2 = junctions3Is(junctions3Is(:,2)==2,1);
+nodereg_3 = junctions3Is(junctions3Is(:,2)==3,1);
+nodereg = {};
+nodereg{1} = nodereg_1;
+nodereg{2} = nodereg_2;
+nodereg{3} = nodereg_3;
+
+%% classify virtual links to clusters: origins -> where the destination
+%is / destinations -> where the origin is
+
+for i=size(Links,1)+1:size(Links2,1)
+    ind = junct2.origin==Links2(i,1);
+    if sum(ind)==0
+        ind = junct2.destination == Links2(i,1);
+        j = junct2.or_index(ind);
+    else
+        j = junct2.dest_index(ind);
     end
-
-    Links2 = [Links2 zeros(size(Links2,1),1)];
-
-    for j=1:length(region2)
-        for i=1:length(region2{j})
-            Links2(Links2(:,1)==region2{j}(i),6) = j;
-        end
-    end
-
-
-    reInd = cell(1,no_reg);
-    for i=1:no_reg
-        reInd{i} =  find(Links2(:,6)== i);
-    end
-
-    nodereg = cell(1,no_reg);
-    for i=1:no_reg
-        nodereg{i} = junctions3Is(junctions3Is(:,2)==i,1);
-
-    end
-
-
-    %classify virtual links to clusters: origins -> where the destination
-    %is / destinations -> where the origin is
-
-    for i=size(Links,1)+1:size(Links2,1)
-        ind = junct2.origin==Links2(i,1);
-        if sum(ind)==0
-            ind = junct2.destination == Links2(i,1);
-            j = junct2.or_index(ind);
+    while 1
+        if ismember(j,reInd_1)
+            reInd_1 = [reInd_1; i];
+            Links2(i,6)=1;
+            break
+        elseif ismember(j,reInd_2)
+            reInd_2 = [reInd_2; i];
+            Links2(i,6)=2;
+            break
+        elseif ismember(j,reInd_3)
+            reInd_3 = [reInd_3; i];
+            Links2(i,6) = 3;
+            break
         else
-            j = junct2.dest_index(ind);
-        end
-
-
-        for r=1:no_reg
-            if ismember(j,reInd{r})
-                reInd{r}(find(reInd{r},1,'last')+1) = i;
-                Links2(i,6)=r;
-            end
-        end
-
-
-    end
-
-    LinksP(:,6) = zeros(size(LinksP,1),1);
-    LinksP(1:length(Links2(:,end)),6) = Links2(:,end);
-    toReturn = [];
-    for i=size(Links2,1)+1:size(LinksP,1)
-        if LinksP(i,1) > 10^7
-            toReturn = [toReturn i];
-        else
-            toSearch = [upstrP(i,3) downstrP(i,3)];
-            toSearch = toSearch(toSearch>0);
-            toSearch = toSearch(toSearch<10^7);
-            LinksP(i,6) = LinksP(LinksP(:,1)==toSearch,6);
+            error(strcat('Error - check link index',num2str(i)))
         end
     end
-    for i = toReturn
+end
+reInd = {};
+reInd{1}=reInd_1;
+reInd{2}=reInd_2;
+reInd{3}=reInd_3;
+
+LinksP(:,6) = zeros(size(LinksP,1),1);
+LinksP(1:length(Links2(:,end)),6) = Links2(:,end); 
+toReturn = []; 
+for i=size(Links2,1)+1:size(LinksP,1)
+    if LinksP(i,1) > 10^7 
+        toReturn = [toReturn i];  
+    else 
         toSearch = [upstrP(i,3) downstrP(i,3)];
         toSearch = toSearch(toSearch>0);
-        LinksP(i,6) = LinksP(LinksP(:,1)==toSearch,6);
+        toSearch = toSearch(toSearch<10^7);   
+        LinksP(i,6) = LinksP(LinksP(:,1)==toSearch,6); 
     end
-
-
-    %Calculate maximum no of vehicles per region (n_jam)
-    max_n = zeros(1,no_reg);
-    for i=1:no_reg
-        max_n(i) = sum(capacity(reInd{i})); %add capacities of all links the region
-    end
-    % max_ntw = sum(max_n);  %jam accumulation of the entire network
-
-    clear reInd_1 reInd_2 reInd_3
-    clear nodereg_1 nodereg_2 nodereg_3 region_1 region_2 region_3
-
-
-    % clustering for nodes --- (centroids not included in the clutering)
-
-    %% Test if clustering is done correctly - [ok]
-    load LINKS.mat %careful - different structure wrt Links2 or Links
-    load nodes.mat %careful - different than Nodes
-    %plot network with colors
-    figure;
-    hold on;
-    for i=1:size(LINKS,1)
-        ind=Links2(i,6);
-        gplotdc1([0 1;0 0],nodes([find(nodes(:,1)==LINKS(i,2)),find(nodes(:,1)==LINKS(i,3))],[2 3]),ind);
-        hold on;
-    end
-
-
-    indG3r = cell(1,no_reg);
-    init_ExitLinksLanesR = cell(1,no_reg);
-    for jk=1:no_reg
-        indG3r{jk} = [];
-        set1 = intersect(reInd{jk},group3);
-        for j = 1:length(set1)
-            indG3r{jk} = [indG3r{jk} find(set1(j) == junct2.dest_index)];
-        end
-        init_ExitLinksLanesR{jk} = junct2.lanesd(indG3r{jk});
-
-    end
-
-
-
 end
+for i = toReturn 
+    toSearch = [upstrP(i,3) downstrP(i,3)];
+    toSearch = toSearch(toSearch>0);
+    LinksP(i,6) = LinksP(LinksP(:,1)==toSearch,6);
+end
+
+%% Capacities of links 
+capacity = Links2(:,2).*Links2(:,3)./vehlength;
+
+%Calculate maximum no of vehicles per region (n_jam) 
+max_n = zeros(1,no_reg);
+for i=1:no_reg
+    max_n(i) = sum(capacity(reInd{i})); %add capacities of all links the region
+end
+% max_ntw = sum(max_n);  %jam accumulation of the entire network 
+
+clear reInd_1 reInd_2 reInd_3
+clear nodereg_1 nodereg_2 nodereg_3 region_1 region_2 region_3
+
+
+
+
+
+%% clustering for nodes --- (centroids not included in the clutering)
+
+%    %% Test if clustering is done correctly - [ok]
+%     load LINKS.mat %careful - different structure wrt Links2 or Links
+%     load nodes.mat %careful - different than Nodes
+%     %plot network with colors
+%     figure;
+%     hold on;
+%     for i=1:size(LINKS,1)
+%         ind=Links2(i,6);
+%         gplotdc1([0 1;0 0],nodes([find(nodes(:,1)==LINKS(i,2)),find(nodes(:,1)==LINKS(i,3))],[2 3]),ind);
+%         hold on;
+%     end
 
 %% Figure of generating demand based on OD matrix 
 

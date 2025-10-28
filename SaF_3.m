@@ -27,22 +27,20 @@ outdata.w = zeros(indata.NLinks2,indata.kmax);                               % W
 outdata.u = zeros(indata.NLinks2,indata.kmax);                               % Outflows
 outdata.q = zeros(indata.NLinks2,indata.kmax);                               % Inflows
 outdata.a_z = zeros(indata.NLinks2,indata.kmax);                             % Q arriving flows
-rho_l = zeros(indata.NLinks2,indata.kmax);                           % min steps required to travel the distance until the end of the queue in constant v_ff
-l_ff = zeros(indata.NLinks2,indata.kmax);                            % current length of the moving part of the road
+outdata.rho_l = zeros(indata.NLinks2,indata.kmax);                           % min steps required to travel the distance until the end of the queue in constant v_ff
+outdata.l_ff = zeros(indata.NLinks2,indata.kmax);                            % current length of the moving part of the road
 tripsCompleted = zeros(length(indata.group3),indata.kmax);                   % Flows entering links with destination centroids / trips completed [veh/DT]
 outdata.cumtripsCompleted=zeros(length(indata.group3),indata.kmax);          % Cummulative Flows entering links with destination centroids / trips completed
 % tripsStarted=zeros(length(indata.group2),indata.kmax);                     % Flows entering origin links [veh/DT]
 % cumtripsStarted=zeros(length(indata.group2),indata.kmax);                  % Cummulative Flows entering origin links
 outdata.upair=zeros(length(indata.junct2.origin),indata.kmax);               % Outflow of the specific approach indata.junct.origin to indata.junct.destination at time step k
 t_winSteps = ceil(indata.t_win/indata.DT);                                   % No of steps for the time window to update turn rates
-outdata.speeds = zeros(size(indata.LinksP,1),ceil(indata.kmax/t_winSteps));          % outdata.speeds of all links per interval
+speeds = zeros(size(indata.LinksP,1),ceil(indata.kmax/t_winSteps));          % speeds of all links per interval
 outdata.node_heterog = zeros(size(indata.Nodes,1),ceil(indata.kmax/indata.c_int));  % Heterogeneity of nodes =
 outdata.avg_q_cycle = zeros(size(indata.Links2,1),ceil(indata.kmax/indata.c_int));  % stores the average queues during the last cycle of the downstream node
 outdata.greentimes2 = zeros([size(indata.greentimes2),ceil(indata.kmax/indata.c_int)]);
-allspeeds = [];
 
-
-% --PC variables / Initialization ---------------
+% --PC variables --------------------
 if PC.mode==1
     % initialize matrices 
     % -- regional accumulations
@@ -191,8 +189,8 @@ if PC.mode == 1
     % of every region) - can happen externaly (move?)
     %initialize/store initial no of lanes for VQs
     
-    PC.extGateLinksReg = cell(1,index.no_reg); %index of VQ virtual links per region
-    PC.extGateConnectionsReg = cell(1,index.no_reg); %index of approaches between VQs and ntw links per region (in junct2)
+    PC.extGateLinksReg = cell(1,3); %index of VQ virtual links per region
+    PC.extGateConnectionsReg = cell(1,3); %index of approaches between VQs and ntw links per region (in junct2)
     for i=1:indata.no_reg %for every region
         PC.extGateLinksReg{i} = intersect(indata.group2,indata.reInd{i}); %VQ link indices of the region
         %store indices of connections in junct to easily modify the VQ
@@ -277,56 +275,53 @@ for k=2:indata.kmax %k = time counter of the simulation
         end
     end
     
-   % Update turn rates every t_winSteps steps
+    % Update turn rates every t_winSteps steps
     % ---------------------------------------------------------------------
     if mod(k,t_winSteps)==0 
-        if indata.updateTR == 1 && k<=indata.kmax %update every t_winSteps
-            
+        if indata.updateTR == 1 && k<indata.kmax %update every t_winSteps
+            t_index = t_index + 1;
 
             %update turn rates
             %defac_avg = mean(indata.defac(k-t_winSteps+1:k)); %average factor
 
             % estimate speeds of all links of group1 during the last time window
             % add free flow to all links
+            % speeds(:,t_index) = speeds(:,t_index) + indata.v_ff/1000; %km/h - v_ff for all vlinks
 
             % for actual network links take the average speed of the time window
-             % define cost fundtion per link for non empty links
-            % calculate speed of the interval as mean of speeds of 90 sec
-            % intervals 
 
-            speeds = zeros(size(indata.LinksP,1),3);
-            ijk = 1;
-            win = 300; %time window to average the speed
-            for cc =1:3 %cc_max must be t_winSteps/win
-                is_empty = sum(outdata.x(:,k-t_winSteps+ijk:k-t_winSteps+cc*win),2);
-                %virtual links are always empty
-                speeds((is_empty<=0.5),cc) = indata.v_ff/1000; %km/h - free flow
+            is_empty = sum(outdata.x(:,(k-t_winSteps+1):k),2);
+            is_empty_ind = find(is_empty==0); %virtual links are always empty
+            speeds(is_empty_ind,t_index) = indata.v_ff/1000; %km/h
 
-                non_empty_ind = (is_empty>0.5);
-                speeds(non_empty_ind,cc) = sum(outdata.u(non_empty_ind,k-t_winSteps+ijk:k-t_winSteps+cc*win),2).*indata.Links2(non_empty_ind,3)...
-                    ./(1000*sum(outdata.x(non_empty_ind,k-t_winSteps+ijk:k-t_winSteps+cc*win),2));
-                ijk = ijk + win;
-            end
-            speeds(speeds>indata.v_ff/1000) =  indata.v_ff/1000;
-            speeds(speeds < 1) = 1; %min speed 
-            allspeeds = [allspeeds speeds];
-            outdata.speeds(:,t_index) = mean(speeds,2); %km/hour
+            non_empty_ind = find(is_empty>0);
+            % define cost fundtion per link for non empty links 
+            speeds(non_empty_ind,t_index) = sum(outdata.u(non_empty_ind,(k-t_winSteps+1):k)*indata.DT,2).*indata.Links2(non_empty_ind,3)...
+                ./(1000*sum(outdata.x(non_empty_ind,(k-t_winSteps+1):k),2)*indata.DT); %km/hour
 
-            outdata.speeds(outdata.speeds(:,t_index)<1,t_index) = 1; %minimum speed to estimate travel time in the link
-            outdata.speeds(outdata.speeds(:,t_index) == 0,t_index) = indata.v_ff/1000; %speeds for upper vlinks
-            outdata.speeds(2202:end,t_index) = indata.v_ff/1000; %speeds for upper vlinks and ending vlinks (not sure if necessary)
-            if sum(outdata.speeds(:,t_index)<=0)>0
+            speeds(speeds(:,t_index)>indata.v_ff/1000,t_index) = indata.v_ff/1000;
+
+            ind1 = speeds(:,t_index)<1;
+            %ind2 = speeds(:,t_index)>0;
+            speeds(ind1,t_index) = 1; %minimum speed to estimate travel time in the link
+            speeds(speeds(:,t_index) == 0,t_index) = indata.v_ff/1000; %speeds for upper vlinks
+            speeds(2202:end,t_index) = indata.v_ff/1000; %speeds for upper vlinks and ending vlinks (not sure if necessary) 
+            if sum(speeds(:,t_index)<=0)>0
                 disp('error speeds')
             end
 
-            %1. First step: find shortest paths (link to link)
+            %         for z=1:size(indata.Links2,1) %all links (also virtual?)
+            %             is_empty = sum(x(z,(k-t_winSteps+1):k))==0; %binary for the case of link remaining empty
+            %             speeds(z,t_index) = max(3000, (1-is_empty)*min([indata.v_ff, sum(u(z,(k-t_winSteps+1):k)*indata.DT)*indata.Links2(z,3)/(sum(x(z,(k-t_winSteps+1):k))/(t_winSteps+1)*(t_winSteps*indata.DT))])+is_empty*indata.v_ff);
+            %         end
+
+            %1. First step: find shortest paths(link to link)
 
             % make connectivity matrix A with travel times (sparse matrix)
-            A1 = indata.A./outdata.speeds(:,t_index); %travel time in hours
+            A1 = indata.A./speeds(:,t_index); %travel time in hours
             if sum(A1<0)>0 
                 error('connectivity matrix A contains negative values of time')
             end
-            t_index = t_index + 1;
             %call function:
             %[connCounters, indata.stack_OD, indata.junct2] = updateTurnAndExitRates(...
             [~, indata.stack_OD, indata.junct2] = updateTurnAndExitRates_1(...
@@ -347,6 +342,7 @@ for k=2:indata.kmax %k = time counter of the simulation
     end
     %----------------------------------------------------------------------------------
     
+    
     if mod(k,indata.c_int)==0 %if we are at the end of a control cycle
         k_c = k_c + 1; %index of past control cycle (for all calculations of the step)
         
@@ -356,9 +352,10 @@ for k=2:indata.kmax %k = time counter of the simulation
         
         % Calculate heterogeneity for every node = variance of all incoming queues (w or
         % x) = mean of the variance of incoming links (over time)
-        %for i=1:size(indata.MP.nodeID,1)
-            %outdata.node_heterog(i,k_c) = mean(var(outdata.x(indata.junct.or_index(indata.MP.approaches{i}),k-90+1:k)));
-        %end
+        for i=1:size(indata.MP.nodeID,1)
+            %outdata.node_heterog(i,k_c) = mean(var(outdata.w(indata.junct.or_index(indata.MP.approaches{i}),k-90+1:k)));
+            outdata.node_heterog(i,k_c) = mean(var(outdata.x(indata.junct.or_index(indata.MP.approaches{i}),k-90+1:k)));
+        end
         
         % Calculate average queue at the end of every control cycle (should
         %be equal to the node signal cycle to be correct)
@@ -371,17 +368,7 @@ for k=2:indata.kmax %k = time counter of the simulation
         % signal reaches the end of its own cycle)
         if PC.mode == 1
             
-            
-            %% Dynamic update of the PC boundaries after new clustering
-            PC = PCcontrolledIntersectionsInfo_dynamic(PC,MP,indata.Links2);
-
-
-
-
-
-
-            
-            %% Measure current aggregated accumulations of regions at time step k (excluding VQs outside the network)
+            %Measure current aggregated accumulations of regions at time step k (excluding VQs outside the network)
             for i=1:indata.no_reg
                 %the sum of queues of all region links at the end of the control cycle (snapshot)
                 agg_n(i,k_c) = sum(outdata.x(intersect(indata.group1,indata.reInd{i}),k));
@@ -403,12 +390,12 @@ for k=2:indata.kmax %k = time counter of the simulation
                 %controller currently inactive (for all regions)
                 
                 %activFlag(k_c+1:end) = sum(actCheck < PC.actCrit)>0; %activated when at least one is x% away from the target
-                activFlag(k_c+1:end) = sum(actCheck < PC.actCrit) >= PC.minRegsAct; %at least 2 regions reaching the target
+                activFlag(k_c+1:end) = sum(actCheck < PC.actCrit)>=2; %at least 2 regions reaching the target
                 %activFlag(k_c+1:end) = actCheck < PC.actCrit; %(one region)
             else
                 %controller currently active
                 
-                activFlag(k_c+1:end) = ~(sum(actCheck > PC.deactCrit) == PC.maxRegAct); %deactivate when all regions are more than x% far from target
+                activFlag(k_c+1:end) = ~(sum(actCheck > PC.deactCrit)==3); %deactivate when all regions are more than x% far from target
                 %activFlag(k_c+1:end) = ~(actCheck > PC.deactCrit); %(one region)
             end
             
@@ -431,8 +418,9 @@ for k=2:indata.kmax %k = time counter of the simulation
                 %disp('controller active')
                 
                 % --apply control results to all external gates (one region PC)
-                % flagact = 1;
-                % indata.junct2.lanesu(extGlobalGateConnections) = min(max(7/90, agg_ug(k_c+1)),1);
+                %flagact = 1;
+                %indata.junct2.lanesu(extGlobalGateConnections) = min(max(7/90, agg_ug(k_c+1)),1);
+                
                 % --external PC: apply control results to all VQs (external and internal)
                 for i=1:indata.no_reg
                     %intended new value
@@ -440,31 +428,30 @@ for k=2:indata.kmax %k = time counter of the simulation
                     check = abs(val)>indata.gn_R; %check how large is the change 
                     
                     if check
-                        % too big change ->
+                        %too big change ->
                         if val>0
-                            % increase
+                            %increase
                             applied_u(indata.no_adjReg+i,k_c+1) = min(100,max(minSatFlowGating,applied_u(indata.no_adjReg+i,k_c) + indata.gn_R));
                         else
-                            % decrease
+                            %decrease
                             applied_u(indata.no_adjReg+i,k_c+1) = min(100,max(minSatFlowGating,applied_u(indata.no_adjReg+i,k_c) - indata.gn_R));
                         end
                     else
-                        % change within the desired limits
+                        %change within the desired limits
                         applied_u(indata.no_adjReg+i,k_c+1) = min(100,max(minSatFlowGating,agg_u(indata.no_adjReg+i,k_c+1)));
                     end
                     
-                    % apply gating as adjustment of no of lanes upstream
+                    %apply gating as adjustment of no of lanes upstream
                     indata.junct2.lanesu(PC.extGateConnectionsReg{i}) = applied_u(indata.no_adjReg+i,k_c+1)/100*PC.initialGateLanes(PC.extGateConnectionsReg{i});
                 end
                 
                 
                 % -- internal PC: apply control results to interregional gates + added external
-                %greens_P = {};
+                greens_P = {};
                 % for i=1:size(agg_u,1)  %for every interregional approach i-j + selected external gates
                 for i=1:(size(agg_u,1)-3)  %for every interregional approach i-j I solve the feasibility problem
                     
                     ind = PC.indices(i,PC.indices(i,:)>0); %all nodes that belong to this approach i-j (non-zero) - the k indices to refer to each node in PC structs
-                    greens_P = cell(length(ind),1);
                     for j=1:length(ind)
                         greens_P{j} = PC.stageDur{ind(j)}; %the greens of all the phases of the set of nodes controlling the i-j
                     end
@@ -495,12 +482,11 @@ for k=2:indata.kmax %k = time counter of the simulation
                 else
                     %disp('controller inactive')
                     %calculate the applied greens from the current settings
-                    %greens_P = [];
+                    greens_P = [];
                     for i=1:indata.no_adjReg
                         ind = PC.indices(i,PC.indices(i,:)>0); %all nodes that belong to this approach i-j (non-zero) - the k indices to refer to each node in PC structs
-                        greens_P = zeros(length(ind),1);
                         for j = 1:length(ind)
-                            greens_P(j) = PC.stageDur{ind(j)}(PC.stagesInvolved(ind(j),1)); %the greens of the main phase of all nodes controlling the i-j
+                            greens_P = [greens_P PC.stageDur{ind(j)}(PC.stagesInvolved(ind(j),1))]; %the greens of the main phase of all nodes controlling the i-j
                         end
                         applied_u(i,k_c+1) = mean(greens_P); %set the initial values for the controller
                     end
@@ -595,7 +581,6 @@ outdata.virtualqueues = outdata.w(indata.group2,:);
 outdata.MPnodes = MPnodes;
 outdata.PC = PC;
 outdata.turn = indata.junct2.turn; %the resulting turn rates
-outdata.allspeeds = allspeeds; 
 if PC.mode==1
     %gather results related to PC 
     outdata.agg_u = agg_u;
@@ -614,52 +599,12 @@ outdata.r3 = r3;
 outdata.r2 = r2; 
 outdata.r1 = r1; 
 toc
-
-%Generating data for dynamic clustering / PC with moving boundaries 
-intrv = 5*60; %(sec) - interval for averaging the values / time window to calculate the average for speed, density etc.; 
-DynPC.LinkSpeeds = outdata.allspeeds(1:indata.NLinks,:); %row = link, col = time window (win)  
-DynPC.Links = indata.Links2(:,1:5); 
-DynPC.NodesCoord = indata.Nodes; 
-DynPC.densities = calculate_means(outdata.x(1:indata.NLinks,:)./(indata.Links2(1:indata.NLinks,3).*indata.Links2(1:indata.NLinks,2)),intrv)*1000; %veh/km
-DynPC.outflows = calculate_means(outdata.u(1:indata.NLinks,:),intrv); %veh/h
-DynPC.occupancies = calculate_means(outdata.x(1:indata.NLinks,:)./indata.capacity(1:indata.NLinks),intrv)*100; %occupancy level - percentage (1 to 100)
-
-sum1 = sum(outdata.x(indata.group1,1:indata.kmax),1); 
-
-t = 180;
-k_MFD = 0; 
-accumulation = 0; 
-for i=t:t:indata.kmax
-        k_MFD = [k_MFD i*indata.DT]; %time for MFD [hours] - intervals of aggregation
-        accumulation = [accumulation mean(sum1(i-t+1:i))]; %(no VQs included) 
-end
-DynPC.accumulations =  accumulation;
-
-% Write the matrix to a CSV file for Nirvana 
-filename = 'LinkSpeeds.csv';
-writematrix(DynPC.LinkSpeeds, filename);
-filename = 'Links.csv';
-writematrix(DynPC.Links, filename);
-filename = 'Nodes.csv';
-writematrix(DynPC.NodesCoord, filename);
-filename = 'densities.csv';
-writematrix(DynPC.densities, filename);
-filename = 'outflows.csv'; 
-writematrix(DynPC.outflows, filename);
-filename = 'linkOccupancies.csv'; 
-writematrix(DynPC.occupancies, filename);
-filename = 'accumulations.csv'; 
-writematrix(DynPC.accumulations, filename);
-filename = 'linkConnections.csv'; 
-connections = [indata.junct.origin' indata.junct.destination'];
-writematrix(connections, filename);
-
 % generating/saving results file 
 if savefull==1
+    save(strcat(fname),'outdata','indata', 'MPnodes','PC','-v7.3');
     save(fname,'outdata','indata', 'MPnodes','PC','-v7.3');
-    save(strcat('DynPC_',fname),'DynPC'); 
 elseif savefull==2
-    %light save (save only TTT and remaining vehicles): 
+    %light save (only TTT): 
     notserviced = outdata.notserviced; 
     save(fname,'r1','r2','r3','notserviced');
 end

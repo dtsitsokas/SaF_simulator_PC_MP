@@ -1,27 +1,38 @@
 % Result analysis of any experiment (single replication) -
 % Print Figures  preparation
 
-function [] = resultAnalysis(S1,demand)
-% clear
-% clc
-% close all
+%function [] = resultAnalysis()
+clear
+clc
+close all
 
-%type here the names of the cases you need to plot/get results or load
-%scenarios:
-%S1 = 5; %set the # of the case in scenarios - comparison with the NC case 
-load('scenarios.mat','scenarios')
 
-scen_ID = [1 S1] ; %choose from the scenarios the cases you need
+% scen_ID = [1 2 15 35]; %besthigh (new PC Q balancing) 
+% scen_ID = [2 12 22]; %best med (new PC Q balancing) 
 
+%type here the names of the cases you need to plot/get results 
+%load scenarios.mat 
+scenarios{1} = 'NC';
+scenarios{2} = 'MP_cd_MS3';
+scenarios{3} = 'PC_62_MP_MS3'; 
+scen_ID = [1 2 3]; %choose from the scenarios the cases you need
+demand = 1;
 %% Set the path where the result file is ---
 
-%path for finding the results:
-path_g = '/Users/tsitokas/Documents/GitHub/SaF-LUTS/results/';
-% fnameProthem = 'output_set5_MedDemand_';
-fnameProthem = strcat('output_final_',demand,'_'); %prothem of the file name for this demand case
-fnameNC = strcat('output_final_',demand,'_NC'); %file for loading the for the indata
-%path to save figures
-pathFigJ = '/Users/tsitokas/Documents/GitHub/SaF-LUTS/results/';
+if demand == 1
+    path_g = 'F:\Max Pressure files\fifth set results\ResultsMediumOD_capacityDrop\';
+    % fnameProthem = 'output_set5_MedDemand_';
+    fnameProthem = 'output_set5_MedDemand_';
+    fnameNC = 'output_set5_MedDemand_NC'; %for the indata
+    pathFigJ = 'F:\Max Pressure files\fifth set results\paper results figures\bestMPsoloMED\';
+
+elseif demand==2 
+    path_g = 'F:\Max Pressure files\fifth set results\ResultsHighOD_capacityDrop\';
+    %fnameProthem = 'output_set5_highDemand_';
+    fnameProthem = 'output_final_high_';
+    fnameNC = 'output_final_high_NC'; %for the indata
+    pathFigJ = 'F:\Max Pressure files\fifth set results\paper results figures\bestMPPChigh\';
+end
 
 xx = 5; %window for moving average
 lineW = 2; %line width for all line plots 
@@ -215,24 +226,24 @@ box on
 hold on
 
 %Single figures
-% 
-% fig1 = figure('Name','MFD network');
-% xlabel('$n$ (veh)');
-% ylabel('$p$ (veh/h)');
-% box on
-% hold on
-% 
-% fig2 = figure('Name','TS n');
-% xlabel('time (h)');
-% ylabel('$n$ (veh)');
-% box on
-% hold on
-% 
-% fig3 = figure('Name','TS VQ');
-% xlabel('time (h)');
-% ylabel('$VQ$ (veh)');
-% box on
-% hold on
+
+fig1 = figure('Name','MFD network');
+xlabel('$n$ (veh)');
+ylabel('$p$ (veh/h)');
+box on
+hold on
+
+fig2 = figure('Name','TS n');
+xlabel('time (h)');
+ylabel('$n$ (veh)');
+box on
+hold on
+
+fig3 = figure('Name','TS VQ');
+xlabel('time (h)');
+ylabel('$VQ$ (veh)');
+box on
+hold on
 %% Figure 2: Multi-figure: traffic performance measures --------------
 % all measures for the entire network (3x3 - 9 figures) 
 
@@ -300,17 +311,17 @@ ylabel('std of $n/c$')
 box on
 hold on
 
-% fig4 = figure('Name','TS cum trip endings');
-% xlabel('time (h)')
-% ylabel('cum. trip endings (veh)')
-% box on
-% hold on
-% 
-% fig5 = figure('Name','TS std nodes');
-% xlabel('time (h)')
-% ylabel('std nodes (veh)')
-% box on
-% hold on
+fig4 = figure('Name','TS cum trip endings');
+xlabel('time (h)')
+ylabel('cum. trip endings (veh)')
+box on
+hold on
+
+fig5 = figure('Name','TS std nodes');
+xlabel('time (h)')
+ylabel('std nodes (veh)')
+box on
+hold on
 
 
 %% Figure 3: Transfer flows between regions + incoming flows from external VQs 
@@ -421,7 +432,7 @@ Legend = cell(length(scen_ID),1);
 for scen = 1:length(scen_ID) %print comparison figures for multiple scenarios 
     
     % store the path of the scenario directory to save the reasulting figures 
-    %mkdir(strcat(path_g,scenarios{scen_ID(scen)},'\'));
+    mkdir(strcat(path_g,scenarios{scen_ID(scen)},'\'));
     path = strcat(path_g,scenarios{scen_ID(scen)},'\');
     
     %load results of the specified scenario
@@ -499,14 +510,14 @@ for scen = 1:length(scen_ID) %print comparison figures for multiple scenarios
     
     %Single figures 
     
-    % figure(fig1)
-    % plot(accumulation,pp,'Linewidth',lineW)
+    figure(fig1)
+    plot(accumulation,pp,'Linewidth',lineW)
     
-    % figure(fig2)
-    % plot(k_MFD, accumulation,'Linewidth',lineW)
+    figure(fig2)
+    plot(k_MFD, accumulation,'Linewidth',lineW)
     
-    % figure(fig3)
-    % plot(k_MFD, vqueues,'Linewidth',lineW)
+    figure(fig3)
+    plot(k_MFD, vqueues,'Linewidth',lineW)
     
     %performance measures - network 
     
@@ -539,7 +550,7 @@ for scen = 1:length(scen_ID) %print comparison figures for multiple scenarios
     
     %SMS 
     subplot(f2(6))
-    plot(k_MFD(2:end), SMS(1:(length(k_MFD)-1),scen_ID(scen)),'LineWidth',lineW)
+    plot(k_MFD(2:end), SMS(:,scen_ID(scen)),'LineWidth',lineW)
     
     %node std 
     subplot(f2(7))
@@ -556,11 +567,11 @@ for scen = 1:length(scen_ID) %print comparison figures for multiple scenarios
         end
         tot_node_het = [tot_node_het mean(node_heterog)];
     end 
-    plot(k_MFD,tot_node_het(1:length(k_MFD)),'LineWidth',lineW)
+    plot(k_MFD,tot_node_het,'LineWidth',lineW)
     
     %link queue std 
     subplot(f2(8))
-    plot(k_MFD, (1:length(k_MFD)),'LineWidth',lineW)
+    plot(k_MFD, het,'LineWidth',lineW)
     
     % n - std of n/c (network heterogeneity) 
     subplot(f2(9))
@@ -568,21 +579,15 @@ for scen = 1:length(scen_ID) %print comparison figures for multiple scenarios
     
     
     
-    % figure(fig4)
-    % %cumulative trip endings
-    % plot(k_MFD, p,'LineWidth',lineW)  
+    figure(fig4)
+    %cumulative trip endings
+    plot(k_MFD, p,'LineWidth',lineW)  
     
-    % figure(fig5)
-    % plot(k_MFD,tot_node_het,'LineWidth',lineW)
+    figure(fig5)
+    plot(k_MFD,tot_node_het,'LineWidth',lineW)
     
     % print the regional figures 
     % Flow MFDs per region - common graph for multiple runs
-
-    Rsum1 = zeros(3,indata.kmax); 
-    Rsum2 = zeros(3,indata.kmax); 
-    Rsum6 = zeros(3,indata.kmax); 
-    Rsum7 = zeros(3,indata.kmax); 
-    Rsum8 = zeros(3,indata.kmax); 
     figure(ff1) 
     for i=1:3
         
@@ -672,7 +677,9 @@ for scen = 1:length(scen_ID) %print comparison figures for multiple scenarios
     %     outflow=outflow';
     %     save outflowS.mat outflow
     %     save accumulationS.mat accumulation
-       
+    
+ 
+    
  
     %% Transfer flows between adjacent regions over time
     figure(ff3)
@@ -707,13 +714,6 @@ for scen = 1:length(scen_ID) %print comparison figures for multiple scenarios
     end
     
     if outdata.PC.mode == 1
-        %reads from the last recorded clustering (needs to adapt to show
-        %previous clusters if X and Y change) 
-        load('fromToRegions.mat','X','Y') %-> change to .csv if needed
-        
-
-        %It prints applied_u for all rows of the junctionsID matrix (even
-        %if no nodes are controlled - to be adjusted if needed) 
         figure('Name',strcat('Control Variables ',scenarios{scen_ID(scen)}))
         hold on
         for i=1:4
@@ -724,67 +724,66 @@ for scen = 1:length(scen_ID) %print comparison figures for multiple scenarios
             %yyaxis right
             plot((1:length(outdata.applied_u))*indata.c_int*indata.DT,outdata.applied_u(i,:)/100*90,'Color',regColor{i-4},'LineWidth',lineW)
         end
-        legend(strcat(num2str(X(1)),'-',num2str(Y(1))),strcat(num2str(X(2)),'-',num2str(Y(2))),...
-            strcat(num2str(X(3)),'-',num2str(Y(3))),strcat(num2str(X(4)),'-',num2str(Y(4))),...
-            'external 1','external 2','external 3','Location','westoutside')
-        %legend('1-2','3-2','2-1','2-3','external 1','external 2','external 3','Location','westoutside')
+        legend('1-2','3-2','2-1','2-3','external 1','external 2','external 3','Location','westoutside')
     end
     
 end
 
-% %Legends and saving 
-% figure(ff1)
-% legend(Legend) 
-% 
-% figure(ff2) 
-% legend(Legend)
-% 
-% figure(ff3) 
-% legend(Legend)
-% 
-% figure(fig1)
-% % legend('FTC','MP $100\%$','MP $25\%$','PC + MP $25\%$','location','southeast')
-% legend('FTC','MP $100\%$','PC','PC + MP $25\%$','location','southeast')
-% fname = 'MFDs_2b';
-% saveas(gcf,strcat(pathFigJ,fname,'.fig'));
-% saveas(gcf,strcat(pathFigJ,fname,'.emf'));
-% print(strcat(pathFigJ,fname,'.eps'),'-depsc','-painters')
-%     
-% figure(fig2)
-% % legend('FTC','MP $100\%$','MP $25\%$','PC + MP $25\%$')
-% legend('FTC','MP $100\%$','PC','PC + MP $25\%$')
-% fname = 'TSn_2b'; 
-% saveas(gcf,strcat(pathFigJ,fname,'.fig'));
-% saveas(gcf,strcat(pathFigJ,fname,'.emf'));
-% print(strcat(pathFigJ,fname,'.eps'),'-depsc','-painters')
-% 
-% figure(fig3)
-% % legend('FTC','MP $100\%$','MP $25\%$','PC + MP $25\%$')
-% legend('FTC','MP $100\%$','PC','PC + MP $25\%$')
-% fname = 'TSVQ_2b';
-% saveas(gcf,strcat(pathFigJ,fname,'.fig'));
-% saveas(gcf,strcat(pathFigJ,fname,'.emf'));
-% print(strcat(pathFigJ,fname,'.eps'),'-depsc','-painters')
-% 
-% figure(fig4)
-% % legend('FTC','MP $100\%$','MP $25\%$','PC + MP $25\%$','location','southeast')
-% legend('FTC','MP $100\%$','PC','PC + MP $25\%$','location','southeast')
-% fname = 'TScumTrips_2b';
-% saveas(gcf,strcat(pathFigJ,fname,'.fig'));
-% saveas(gcf,strcat(pathFigJ,fname,'.emf'));
-% print(strcat(pathFigJ,fname,'.eps'),'-depsc','-painters')
-% 
-% figure(fig5)
-% % legend('FTC','MP $100\%$','MP $25\%$','PC + MP $25\%$')
-% legend('FTC','MP $100\%$','PC','PC + MP $25\%$')
-% fname = 'TSstdNodes_2b';
-% saveas(gcf,strcat(pathFigJ,fname,'.fig'));
-% saveas(gcf,strcat(pathFigJ,fname,'.emf'));
-% print(strcat(pathFigJ,fname,'.eps'),'-depsc','-painters')
+%Legends and saving 
+figure(ff1)
+legend(Legend) 
+
+figure(ff2) 
+legend(Legend)
+
+figure(ff3) 
+legend(Legend)
+
+%% Additional figures (maps) - Control related
+
+figure(fig1)
+% legend('FTC','MP $100\%$','MP $25\%$','PC + MP $25\%$','location','southeast')
+legend('FTC','MP $100\%$','PC','PC + MP $25\%$','location','southeast')
+fname = 'MFDs_2b';
+saveas(gcf,strcat(pathFigJ,fname,'.fig'));
+saveas(gcf,strcat(pathFigJ,fname,'.emf'));
+print(strcat(pathFigJ,fname,'.eps'),'-depsc','-painters')
+    
+figure(fig2)
+% legend('FTC','MP $100\%$','MP $25\%$','PC + MP $25\%$')
+legend('FTC','MP $100\%$','PC','PC + MP $25\%$')
+fname = 'TSn_2b'; 
+saveas(gcf,strcat(pathFigJ,fname,'.fig'));
+saveas(gcf,strcat(pathFigJ,fname,'.emf'));
+print(strcat(pathFigJ,fname,'.eps'),'-depsc','-painters')
+
+figure(fig3)
+% legend('FTC','MP $100\%$','MP $25\%$','PC + MP $25\%$')
+legend('FTC','MP $100\%$','PC','PC + MP $25\%$')
+fname = 'TSVQ_2b';
+saveas(gcf,strcat(pathFigJ,fname,'.fig'));
+saveas(gcf,strcat(pathFigJ,fname,'.emf'));
+print(strcat(pathFigJ,fname,'.eps'),'-depsc','-painters')
+
+figure(fig4)
+% legend('FTC','MP $100\%$','MP $25\%$','PC + MP $25\%$','location','southeast')
+legend('FTC','MP $100\%$','PC','PC + MP $25\%$','location','southeast')
+fname = 'TScumTrips_2b';
+saveas(gcf,strcat(pathFigJ,fname,'.fig'));
+saveas(gcf,strcat(pathFigJ,fname,'.emf'));
+print(strcat(pathFigJ,fname,'.eps'),'-depsc','-painters')
+
+figure(fig5)
+% legend('FTC','MP $100\%$','MP $25\%$','PC + MP $25\%$')
+legend('FTC','MP $100\%$','PC','PC + MP $25\%$')
+fname = 'TSstdNodes_2b';
+saveas(gcf,strcat(pathFigJ,fname,'.fig'));
+saveas(gcf,strcat(pathFigJ,fname,'.emf'));
+print(strcat(pathFigJ,fname,'.eps'),'-depsc','-painters')
 
 %%  Plot: Maps 
+
 
 % legend('FTC','PC','PC + MP $25\%$')
 % saveas(gcf,strcat(pathFigJ,'multiMFD_2.fig'));
 % print(strcat(pathFigJ,'multiMFD_2.eps'),'-depsc','-painters')
-

@@ -1,18 +1,18 @@
 % Script to generate figures for demand descrtiption
 
-for demandCode = 1:1 %1 for med, 2 for high
+for demandCode = 1:2 %1 for med, 2 for high
     
     % load demand data (OD matrix)
     if demandCode == 1
-        path = 'C:\Users\tsitsoka\Desktop\SaF3 Simulator LUTS\';
+        path = 'C:\Users\tsitsoka\Documents\Dimitris Local Documents pc10\GitHub-My repositories\MaxPressure_Codes-\input files\medium demand input\';
         demandDesc = 'medium';
     elseif demandCode == 2
-        path = 'C:\Users\tsitsoka\Desktop\SaF3 Simulator LUTS\scenarios dimitris\high demand\';
+        path = 'C:\Users\tsitsoka\Documents\Dimitris Local Documents pc10\GitHub-My repositories\MaxPressure_Codes-\input files\high demand input\';
         demandDesc = 'high';
     end
     
     % path to save figures
-    pathfig = 'C:\Users\tsitsoka\Desktop\SaF3 Simulator LUTS\';
+    pathfig = 'F:\Max Pressure files\fifth set results\paper results figures\demadDescriptionFigures\';
     
     fname = strcat(path,'indata');
     load(fname)

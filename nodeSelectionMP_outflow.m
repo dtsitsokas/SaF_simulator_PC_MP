@@ -14,7 +14,7 @@ elseif demandCode == 2
     
     %Case NC as reference for MP selection
     %fname = 'C:\Users\tsitsoka\Documents\Dimitris Local Documents pc10\GitHub-My repositories\MaxPressure_Codes-\Current results\ResultsHighOD_capacityDrop\output_set4_test_NC';
-    fname = 'F:\Max Pressure files\fifth set results\ResultsHighOD_capacityDrop\output_set5_highDemand_NC\';
+    fname = '/Users/tsitokas/Documents/GitHub/SaF_simulator_PC_MP/results high 2025/output_final_high_NC.mat'; %'F:\Max Pressure files\fifth set results\ResultsHighOD_capacityDrop\output_set5_highDemand_NC\';
     
     %Case PC as reference for MP selection 
     %fname = 'F:\Max Pressure files\fifth set results\ResultsHighOD_capacityDrop\output_set5_highDemand_PC_50b';
