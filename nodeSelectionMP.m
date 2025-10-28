@@ -267,8 +267,8 @@ end
 %Selection by the function A
 if mode_A == 1
     % load the eligible MP nodes
-    elig_MPnodes = load('MPnodesCase_MP_0','MPnodes');
-    
+    % elig_MPnodes = load('MPnodesCase_MP_0','MPnodes');
+    elig_MPnodes = load('input_MP_0.mat','MPnodes');
     %define percentage target (first x nodes)
     num_Top = round(target_p*num_MPall);
     
