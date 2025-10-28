@@ -14,9 +14,9 @@ A] How to run a simulation experiment:
 
 2) Make sure all required input files are in the folder and up to date 
 
-3) Open main SaF_3 file 
+3) Open main file: MaxPressure_SaF_3_Execution.m
 
-	* set filenames of the scenarios that you wish to run 
+	* set the filenames of the scenarios that you wish to run 
 	* set all parameter values in section "Run Settings":
 
 		- in jj set a vector of all "scenario" indices that you need to run, e.g. jj = [1 2 3] to run cases scenarios{1}, scenarios{2}, scenarios{3} 
