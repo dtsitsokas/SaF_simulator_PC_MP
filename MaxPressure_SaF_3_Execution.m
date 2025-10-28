@@ -120,7 +120,7 @@ save('scenarios.mat','scenarios')
 
 %% Run Settings 
 
-jj = 3:8; % IDs of scenarios to run 
+jj = 37:42; % IDs of scenarios to run 
 demandCode = 2; %1 med, 2 high (defines which input files (demand, PC/MP settings etc.) 
 PCcode = 1; %1 if PC is included, 0 else
 MPcode = 1; %1 if specific MP is included, 0 if no MP, 100 if MP all, 2 if random MP  
